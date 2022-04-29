@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/gtests_common.dir/gtest_spinlock.cpp.o -o gtests_common  -lgtest_main 

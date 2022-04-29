@@ -1,0 +1,58 @@
+Performing C++ SOURCE FILE Test HAVE_CXX_FLAG_WD654 failed with the following output:
+Change Dir: /home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_ea668/fast && /usr/bin/make  -f CMakeFiles/cmTC_ea668.dir/build.make CMakeFiles/cmTC_ea668.dir/build
+make[1]: Entering directory '/home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_ea668.dir/src.cxx.o
+/usr/bin/c++ -DHAVE_CXX_FLAG_WD654  -std=c++11  -Wall  -Wextra  -Wshadow  -Wfloat-equal  -Wsuggest-override  -pedantic  -pedantic-errors  -Wshorten-64-to-32  -fstrict-aliasing  -Wno-deprecated-declarations  -Wstrict-aliasing  -wd654   -wd654 -MD -MT CMakeFiles/cmTC_ea668.dir/src.cxx.o -MF CMakeFiles/cmTC_ea668.dir/src.cxx.o.d -o CMakeFiles/cmTC_ea668.dir/src.cxx.o -c /home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp/src.cxx
+clang: error: unknown argument: '-wd654'
+clang: error: unknown argument: '-wd654'
+make[1]: *** [CMakeFiles/cmTC_ea668.dir/build.make:79: CMakeFiles/cmTC_ea668.dir/src.cxx.o] Error 1
+make[1]: Leaving directory '/home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:127: cmTC_ea668/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_809be/fast && /usr/bin/make  -f CMakeFiles/cmTC_809be.dir/build.make CMakeFiles/cmTC_809be.dir/build
+make[1]: Entering directory '/home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_809be.dir/src.c.o
+/usr/bin/cc -DCMAKE_HAVE_LIBC_PTHREAD   -MD -MT CMakeFiles/cmTC_809be.dir/src.c.o -MF CMakeFiles/cmTC_809be.dir/src.c.o.d -o CMakeFiles/cmTC_809be.dir/src.c.o -c /home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_809be
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_809be.dir/link.txt --verbose=1
+/usr/bin/cc CMakeFiles/cmTC_809be.dir/src.c.o -o cmTC_809be 
+/usr/bin/ld: CMakeFiles/cmTC_809be.dir/src.c.o: in function `main':
+src.c:(.text+0x25): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x2e): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x37): undefined reference to `pthread_cancel'
+/usr/bin/ld: src.c:(.text+0x44): undefined reference to `pthread_join'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_809be.dir/build.make:100: cmTC_809be] Error 1
+make[1]: Leaving directory '/home/fuzhe/projects/datastructures/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:127: cmTC_809be/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+static void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_cancel(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
