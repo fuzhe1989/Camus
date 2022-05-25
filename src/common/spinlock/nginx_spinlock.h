@@ -2,7 +2,7 @@
 
 #include <emmintrin.h>
 #include <atomic>
-#include <stdint>
+#include <cstdint>
 #include <thread>
 
 namespace nginx {
@@ -17,7 +17,7 @@ public:
 
             for (int n = 1; n < 1024; n <<= 1) {
                 for (int i = 0; i < n; ++i) {
-                    _m_pause();
+                    _mm_pause();
                 }
 
                 if (setToOne())
