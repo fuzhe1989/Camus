@@ -5,11 +5,11 @@
 #include <cstdint>
 #include <thread>
 
-namespace nginx {
-class SpinLock {
+namespace ds {
+class NginxSpinLock {
 public:
-    SpinLock() = default;
-    
+    NginxSpinLock() = default;
+
     void lock() {
         while (true) {
             if (setToOne())
@@ -29,7 +29,7 @@ public:
     }
 
     void unlock() {
-        m_lock.store(1, std::memory_order_release);
+        m_lock.store(0, std::memory_order_release);
     }
 private:
     bool setToOne() {
@@ -38,6 +38,6 @@ private:
             m_lock.compare_exchange_weak(expected, 1, std::memory_order_acq_rel);
     }
 
-    std::atomic<int64_t> m_lock{0};
+    alignas(64) std::atomic<int64_t> m_lock{0};
 };
-} // namespace nginx
+} // namespace ds

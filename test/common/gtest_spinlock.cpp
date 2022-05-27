@@ -1,25 +1,29 @@
 #include <gtest/gtest.h>
 #include <common/spinlock/nginx_spinlock.h>
+#include <common/spinlock/trivial_exchange_spinlock.h>
+#include <common/spinlock/ticket_spinlock.h>
 
 #include <thread>
 #include <vector>
+#include <cstdint>
 
-namespace tests {
+namespace ds::tests {
 namespace {
 
 template <typename T>
 class SpinLockTest : public ::testing::Test {
-protected:
-    using SpinLock = T;
 };
 
-using SpinLockTypes = ::testing::Types<nginx::SpinLock>;
+using SpinLockTypes = ::testing::Types<
+    NginxSpinLock,
+    TrivialSpinLock,
+    TicketSpinLock>;
 TYPED_TEST_SUITE(SpinLockTest, SpinLockTypes);
 
 TYPED_TEST(SpinLockTest, testLock) {
-    nginx::SpinLock lk;
-    constexpr int thread_count = 1;
-    int value = 0;
+    TypeParam lk;
+    static const int64_t thread_count = std::thread::hardware_concurrency();
+    int64_t value = 0;
 
     auto f = [&] {
         for (int i = 0; i < 1000000; ++i) {
@@ -40,4 +44,4 @@ TYPED_TEST(SpinLockTest, testLock) {
 }
 
 } // namespace
-} // namespace tests
+} // namespace ds::tests
