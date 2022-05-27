@@ -12,7 +12,7 @@ public:
     void lock() {
         while (true) {
             int64_t expected = 0;
-            if (m_lock.compare_exchange_strong(expected, 1, std::memory_order_acq_rel))
+            if (m_lock.compare_exchange_strong(expected, 1, std::memory_order_acquire))
                 return;
         }
     }
