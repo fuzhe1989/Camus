@@ -21,7 +21,7 @@ Let's build a toy system from scrash by leveraging modern C++ techniques.
 
 Currently only one application is planning.
 
-### Build a key-value system with strong type support.
+### Build a key-value storage engine with strong schema support
 
 The first version will be:
 1. built on RocksDB.
