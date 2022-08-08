@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
-add_subdirectory (contrib EXCLUDE_FROM_ALL)
+find_package(GTest)
 
 add_subdirectory(src)
 add_subdirectory(tests)
