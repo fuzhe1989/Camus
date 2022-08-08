@@ -1,0 +1,8 @@
+[requires]
+gtest/cci.20210126
+boost/1.79.0
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
