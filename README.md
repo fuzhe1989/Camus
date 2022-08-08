@@ -1,15 +1,15 @@
 # Hafnium (hf)
 
-[Hafnium](https://en.wikipedia.org/wiki/Hafnium) is a chemical element. It's chinese name is "铪" ^_^.
+[Hafnium](https://en.wikipedia.org/wiki/Hafnium) is a chemical element. It's chinese name is "铪".
 
 Hf is an experimental project.
 
-## Motivation
+## Motivations
 
 1. Build applications by leveraging modern C++ (coroutine, ranges, execution, etc.) techniques.
 2. Build a set of high-performance data-oriented systems from scratch.
 
-## The modern C++ foundation
+### The modern C++ foundation
 
 1. Package manager.
 1. Networking (RPC, TCP, DPDK).
@@ -22,7 +22,7 @@ Hf is an experimental project.
 1. Configuration.
 1. ...
 
-## The toy applications
+### The toy applications
 
 Currently only one application is planning.
 
@@ -31,3 +31,17 @@ Currently only one application is planning.
 The first version will be:
 1. built on RocksDB.
 1. single node.
+
+## Build
+
+Install [conan](https://conan.io/).
+
+Then:
+
+```
+mkdir build && cd build
+conan .. --build=missing
+cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo
+make
+```
+
