@@ -12,7 +12,7 @@ Hf is an experimental project.
 ## The modern C++ foundation
 
 1. Package manager.
-1. RPC.
+1. Networking (RPC, TCP, DPDK).
 1. Storage (iouring support).
 1. Logging.
 1. Runtime (coroutine and scheduler).
