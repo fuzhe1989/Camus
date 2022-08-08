@@ -2,7 +2,12 @@
 
 [Hafnium](https://en.wikipedia.org/wiki/Hafnium) is a chemical element.
 
-Let's build a toy system from scrash by leveraging modern C++ techniques.
+Hf is an experimental project.
+
+## Motivation
+
+1. Build applications by leveraging modern C++ (coroutine, ranges, execution, etc.) techniques.
+2. Build a set of high-performance data-oriented systems from scratch.
 
 ## The modern C++ foundation
 
