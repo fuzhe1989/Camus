@@ -8,15 +8,17 @@
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/write.hpp>
 #include <cstdio>
+#include <thread>
+#include <vector>
 
 using boost::asio::awaitable;
 using boost::asio::buffer;
 using boost::asio::co_spawn;
 using boost::asio::detached;
+using boost::asio::io_context;
+using boost::asio::signal_set;
 using boost::asio::use_awaitable;
 using boost::asio::ip::tcp;
-using boost::asio::signal_set;
-using boost::asio::io_context;
 namespace this_coro = boost::asio::this_coro;
 
 awaitable<void> echo(tcp::socket socket) {
@@ -39,12 +41,18 @@ awaitable<void> listener() {
 }
 
 int main() {
+  std::vector<std::jthread> threads;
+  for (int i = 0; i < 4; ++i) {
+    threads.emplace_back([] {
     try {
         io_context context(1);
         signal_set signals(context, SIGINT, SIGTERM);
         signals.async_wait([&](auto, auto) { context.stop(); });
 
         co_spawn(context, listener(), detached);
+
         context.run();
     } catch (std::exception & e) { std::printf("Exception: %s\n", e.what()); }
+    });
+  }
 }
