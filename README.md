@@ -1,6 +1,6 @@
 # Hafnium (hf)
 
-[Hafnium](https://en.wikipedia.org/wiki/Hafnium) is a chemical element.
+[Hafnium](https://en.wikipedia.org/wiki/Hafnium) is a chemical element. It's chinese name is "铪" ^_^.
 
 Hf is an experimental project.
 
