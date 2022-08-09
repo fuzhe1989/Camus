@@ -40,7 +40,7 @@ Then:
 
 ```
 mkdir build && cd build
-conan .. --build=missing
+conan install .. --build=missing
 cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make
 ```

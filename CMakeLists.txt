@@ -9,6 +9,7 @@ set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
 find_package(GTest)
 find_package(Boost)
+find_package(magic_enum)
 
 add_subdirectory(src)
 add_subdirectory(tests)
