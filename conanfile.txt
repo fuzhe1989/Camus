@@ -1,6 +1,7 @@
 [requires]
 gtest/cci.20210126
 boost/1.79.0
+magic_enum/0.8.0
 
 [generators]
 CMakeDeps
