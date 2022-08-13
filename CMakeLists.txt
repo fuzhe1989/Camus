@@ -7,6 +7,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fcoroutines-ts")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
+include (${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+
 find_package(GTest)
 find_package(Boost)
 find_package(magic_enum)
