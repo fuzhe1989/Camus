@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdint>
 #include <mutex>
+#include <thread>
 
 #define OBJECT_COUNT 4
 #define OBJECT_MASK (OBJECT_COUNT - 1)
@@ -58,7 +59,36 @@ void storeReadRelease(Object * obj) {
 }
 
 Object * storeWriteLock(Store * store) {
-    std::unique_lock lock(store->mu);
+    store->mu.lock();
     auto idx = store->state.load() & OBJECT_MASK;
     return store->objects[idx].load();
+}
+
+void storeWriteUnlock(Store * store, Object * obj, void (*dtor)(void *)) {
+    uintptr_t idx = 0;
+    for (;;) {
+        for (idx = 0; idx != OBJECT_COUNT; ++idx) {
+            if (store->objects[idx] == nullptr) {
+                break;
+            }
+        }
+        if (idx != OBJECT_COUNT) {
+            break;
+        }
+        std::this_thread::yield();
+    }
+    store->objects[idx].store(obj);
+    obj->rc = PERSISTENT;
+    obj->back_ptr = &store->objects[idx];
+    obj->dtor = dtor;
+    auto prev = store->state.exchange(idx);
+    auto old_cnt = prev & COUNT_MASK;
+    auto old_idx = prev & OBJECT_MASK;
+    auto * old_obj = store->objects[old_idx].load();
+    auto cnt_dif = static_cast<uintptr_t>(-static_cast<intptr_t>(old_cnt / OBJECT_COUNT * TEMPORAL + PERSISTENT));
+    auto cnt_res = old_obj->rc.fetch_add(cnt_dif) + cnt_dif;
+    store->mu.unlock();
+    if (cnt_res == 0) {
+        storeReleaseObject(old_obj);
+    }
 }
