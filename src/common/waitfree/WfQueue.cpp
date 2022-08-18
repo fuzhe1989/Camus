@@ -98,6 +98,7 @@ struct Handle {
     Segment * head;
     Handle * next;
 
+    // used in helpEnqueue
     EnqueueReq enqReq;
     Handle * enqPeer;
 
@@ -217,9 +218,9 @@ void * helpEnqueue(Queue * q, Handle * h, Cell * c, int64_t i) {
             return cellValue;
         }
     }
-    // now c->val is 'never', try to help an enqueuer for occupying this cell
-    // an enqueuer already reached here.
-    if (c->enq.load() != nullptr) {
+    // Now c->val is 'never', try to help an enqueuer for occupying this cell
+    // No enqueuer here, try to help peer
+    if (c->enq.load() == nullptr) {
         State s;
         EnqueueReq * r = nullptr;
         Handle * p = nullptr;
@@ -227,10 +228,10 @@ void * helpEnqueue(Queue * q, Handle * h, Cell * c, int64_t i) {
             p = h->enqPeer;
             r = &p->enqReq;
             s = r->state.load();
-            auto hsid = h->enqReq.state.load().id;
-            if (hsid == 0 || hsid == s.id)
+            auto hs = h->enqReq.state.load();
+            if (hs.id == 0 || hs.id == s.id)
                 break;
-            h->enqReq.state.store({false, 0});
+            h->enqReq.state.store({hs.pending, 0});
             h->enqPeer = p->next;
         }
         if (s.pending && s.id <= i && !cas(c->enq, nullptr, r)) {
