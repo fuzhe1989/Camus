@@ -3,16 +3,16 @@
 #include <cstdint>
 #include <tuple>
 
-template <typename T, typename U>
-bool cas(std::atomic<T> & c, U expected, T to) {
-    T e = expected;
-    return c.compare_exchange_strong(e, to);
-}
+// This file is based on the following paper:
+// https://dl.acm.org/doi/pdf/10.1145/2851141.2851168?casa_token=GCFNpGQM8bkAAAAA:55uybX74gAnT58GRrJU-QHerU8gFwkeMmp46a7cX2hE782_KyK_qMVXfMmiM007jGxn_OhLKbd8
+//
+// Note that the author already opensourced his code at https://github.com/chaoran/fast-wait-free-queue
 
 template <typename T, typename U>
-bool cas(std::atomic<T> & c, U expected, T to, T * newValue) {
-    *newValue = expected;
-    return c.compare_exchange_strong(*newValue, to);
+T cas(std::atomic<T> & c, U expected, T to) {
+    T e = expected;
+    c.compare_exchange_strong(e, to);
+    return e;
 }
 
 struct State {
@@ -116,7 +116,7 @@ Cell * findCell(Segment ** sp, int64_t cellId) {
         auto * next = s->next.load();
         if (!next) {
             auto * tmp = newSegment(i + 1);
-            if (!cas(s->next, nullptr, tmp)) {
+            if (cas(s->next, nullptr, tmp) != nullptr) {
                 delete tmp;
             }
             next = s->next;
@@ -130,7 +130,7 @@ Cell * findCell(Segment ** sp, int64_t cellId) {
 void advanceEndForLinearizability(std::atomic<int64_t> * e, int64_t cid) {
     for (;;) {
         auto v = e->load();
-        if (v >= cid || cas(*e, v, cid)) {
+        if (v >= cid || cas(*e, v, cid) == v) {
             break;
         }
     }
@@ -139,11 +139,11 @@ void advanceEndForLinearizability(std::atomic<int64_t> * e, int64_t cid) {
 bool tryToClaimReq(std::atomic<State> * s, int64_t id, int64_t cellId, State * newState) {
     *newState = {true, id};
     State to = {false, cellId};
-    return cas(*s, *newState, to);
+    return cas(*s, *newState, to) == *newState;
 }
 
 void enqCommit(Queue * q, Cell * c, void * v, int64_t cid) {
-    // keep reverse order from helpEnqueue
+    // keep reverse order of `helpEnqueue`
     advanceEndForLinearizability(&q->tail, cid + 1);
     c->val.store(v);
 }
@@ -151,7 +151,7 @@ void enqCommit(Queue * q, Cell * c, void * v, int64_t cid) {
 bool enqueueFast(Queue * q, Handle * h, void * v, int64_t * cid) {
     auto i = q->tail.fetch_add(1);
     auto * c = findCell(&h->tail, i);
-    if (cas(c->val, nullptr, v))
+    if (cas(c->val, nullptr, v) == nullptr)
         return true;
     *cid = i;
     return false;
@@ -169,7 +169,7 @@ void enqueueSlow(Queue * q, Handle * h, void * v, int64_t cellId) {
         auto * c = findCell(&tmpTail, i);
         // Try to prevent other dequeuers from occupying this cell.
         // Note that other enqueuers won't touch this cell since all enqueuers are FAA q->tail.
-        if (cas(c->enq, nullptr, r)) {
+        if (cas(c->enq, nullptr, r) == nullptr) {
             // Must cas c->enq then load c->val since dequeuer follows the same order.
             auto * v = c->val.load();
             // Now helpEnqueue won't change c->enq anymore, but some helper may already mark it as 'never'.
@@ -211,8 +211,7 @@ void enqueue(Queue * q, Handle * h, void * v) {
 
 void * helpEnqueue(Queue * q, Handle * h, Cell * c, int64_t i) {
     // try mark an empty cell as 'never'
-    void * cellValue = nullptr;
-    if (!cas(c->val, nullptr, gNeverValue, &cellValue)) {
+    if (auto * cellValue = cas(c->val, nullptr, gNeverValue); cellValue != nullptr) {
         // c->val could be v or 'never', there won't have way from v to 'nevee' so directly compare is ok.
         if (cellValue != gNeverValue) {
             return cellValue;
@@ -220,40 +219,65 @@ void * helpEnqueue(Queue * q, Handle * h, Cell * c, int64_t i) {
     }
     // Now c->val is 'never', try to help an enqueuer for occupying this cell
     // No enqueuer here, try to help peer
-    if (c->enq.load() == nullptr) {
-        State s;
-        EnqueueReq * r = nullptr;
-        Handle * p = nullptr;
-        for (;;) {
-            p = h->enqPeer;
+    auto * enq = c->enq.load();
+    if (enq == nullptr) {
+        auto * p = h->enqPeer;
+        auto * r = &p->enqReq;
+        auto s = r->state.load();
+        auto hs = h->enqReq.state.load();
+        // hs.id == s.id means I saw it last round. Try to help this peer.
+        if (hs.id != s.id) {
+            // try next peer
+            h->enqPeer = p = p->next;
             r = &p->enqReq;
             s = r->state.load();
-            auto hs = h->enqReq.state.load();
-            if (hs.id == 0 || hs.id == s.id)
-                break;
-            h->enqReq.state.store({hs.pending, 0});
-            h->enqPeer = p->next;
         }
-        if (s.pending && s.id <= i && !cas(c->enq, nullptr, r)) {
+        // s.pending: s really needs help
+        // s.id <= i: this help won't violate linearizability
+        // cas: help succeeded
+        if (s.pending && s.id <= i && (enq = cas(c->enq, nullptr, r)) != nullptr) {
+            // Fail to help current peer, there must someone (enqueuer or dequeuer) is doing the same thing.
+            // Break and try to help this enq.
+            // Record s.id for next `helpEnqueue`
             h->enqReq.state.store({false, s.id});
         } else {
+            // This peer needn't help or the cas already succeeded.
+            // In both scenes we could move to next peer.
             h->enqPeer = p->next;
         }
-        if (c->enq.load() == nullptr)
-            cas(c->enq, nullptr, gNeverEnq);
+        if (enq == nullptr) {
+            // Try to mask this cell as 'never'
+            enq = cas(c->enq, nullptr, gNeverEnq);
+        }
     }
-    if (c->enq.load() == gNeverEnq) {
-        return q->tail <= i ? nullptr : gNeverValue;
+    // If enq is 'never' then no enqueuer will enter here.
+    if (enq == gNeverEnq) {
+        // q->tail <= i means the dequeuer is too ahead of enqueuers and don't worth to retry.
+        // q->tail > i means the dequeuer could continue to search for a candidate.
+        return q->tail.load() <= i ? nullptr : gNeverValue;
     }
-    auto * r = c->enq.load();
-    auto [v, s] = r->loadBoth();
+    auto [v, s] = enq->loadBoth();
+    // s.id > i means the enqueuer already skipped this cell
     if (s.id > i) {
-        if (c->val == gNeverValue && q->tail <= i)
+        // must fetch val then tail, keep reserve order of `enqCommit`
+        // same as the previous if
+        if (c->val.load() == gNeverValue && q->tail.load() <= i)
             return nullptr;
-    } else if (tryToClaimReq(&r->state, s.id, i, &s) || (s == State{false, i} && c->val == gNeverValue)) {
+        else
+            return gNeverValue;
+    } else if (tryToClaimReq(&enq->state, s.id, i, &s)) {
+        // claim succeeds, continue commit.
         enqCommit(q, c, v, i);
+        return v;
+    } else if (s == State{false, i} && c->val.load() == gNeverValue) {
+        // claim failed and another guy also claimed i and they hasn't finished commit.
+        // Try to help they.
+        enqCommit(q, c, v, i);
+        return v;
+    } else {
+        // claim failed and another guy claimed a different value, return the new value.
+        return c->val.load();
     }
-    return c->val;
 }
 
 void helpDequeue(Queue * q, Handle * h, Handle * helpee) {
@@ -282,7 +306,7 @@ void helpDequeue(Queue * q, Handle * h, Handle * helpee) {
         if (!s.pending || r->id.load() != id)
             return;
         auto * c = findCell(&ha, s.id);
-        if (c->val == gNeverValue || cas(c->deq, nullptr, r) || c->deq.load() == r) {
+        if (c->val == gNeverValue || cas(c->deq, nullptr, r) == nullptr || c->deq.load() == r) {
             cas(r->state, s, {false, s.id});
             return;
         }
@@ -294,16 +318,19 @@ void helpDequeue(Queue * q, Handle * h, Handle * helpee) {
     }
 }
 
-void * dequeueFast(Queue * q, Handle * h, int64_t * id) {
+std::tuple<int64_t, void *> dequeueFast(Queue * q, Handle * h) {
     auto i = q->head.fetch_add(1);
     auto * c = findCell(&h->head, i);
     auto * v = helpEnqueue(q, h, c, i);
+    // nullptr means the current dequeuer is ahead of all enqueuers.
+    // Return nullptr means this call failed but this cell is revisitable.
     if (v == nullptr)
-        return nullptr;
-    if (v != gNeverValue && cas(c->deq, nullptr, gNeverDeq))
-        return v;
-    *id = i;
-    return gNeverValue;
+        return {i, nullptr};
+    // v == gNeverValue: this cell is marked as 'never', skip it.
+    // cas fail: a dequeuer already working on this cell, skip it.
+    if (v != gNeverValue && cas(c->deq, nullptr, gNeverDeq) == nullptr)
+        return {i, v};
+    return {i, gNeverValue};
 }
 
 void * dequeueSlow(Queue * q, Handle * h, int64_t cid) {
@@ -322,7 +349,7 @@ void * dequeue(Queue * q, Handle * h) {
     void * v = nullptr;
     int64_t cellId = 0;
     for (auto p = PATIENCE; p >= 0; --p) {
-        v = dequeueFast(q, h, &cellId);
+        std::tie(cellId, v) = dequeueFast(q, h);
         if (v != gNeverValue)
             break;
     }
