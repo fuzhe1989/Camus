@@ -335,6 +335,7 @@ std::tuple<int64_t, void *> dequeueFast(Queue * q, Handle * h) {
 
 void * dequeueSlow(Queue * q, Handle * h, int64_t cid) {
     auto * r = &h->deqReq;
+    // claim self as help needed
     r->storeBoth(cid, {true, cid});
 
     helpDequeue(q, h, h);
