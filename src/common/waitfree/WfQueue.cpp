@@ -144,6 +144,7 @@ bool tryToClaimReq(std::atomic<State> * s, int64_t id, int64_t cellId, State * n
 
 void enqCommit(Queue * q, Cell * c, void * v, int64_t cid) {
     // keep reverse order of `helpEnqueue`
+    // Note that `enqCommit` is only called on slow path, while on fast path q->tail is directly FAAed.
     advanceEndForLinearizability(&q->tail, cid + 1);
     c->val.store(v);
 }
@@ -280,13 +281,15 @@ void * helpEnqueue(Queue * q, Handle * h, Cell * c, int64_t i) {
     }
 }
 
+// note that multiple dequeuers may be working on the same Handle.
 void helpDequeue(Queue * q, Handle * h, Handle * helpee) {
+    auto * ha = helpee->head; // avoid directly modify peer's head
     auto * r = &helpee->deqReq;
     auto [id, s] = r->loadBoth();
+    // !s.pending: s needn't help
+    // s.id < id: s falls behind and we can't help they.
     if (!s.pending || s.id < id)
         return;
-    auto * ha = helpee->head;
-    s = r->state.load();
     auto prior = id;
     auto i = id;
     int64_t cand = 0;
@@ -337,12 +340,15 @@ void * dequeueSlow(Queue * q, Handle * h, int64_t cid) {
     auto * r = &h->deqReq;
     // claim self as help needed
     r->storeBoth(cid, {true, cid});
-
+    // help self
     helpDequeue(q, h, h);
+    // r contains the result of `helpDequeue`
     auto i = r->state.load().id;
     auto * c = findCell(&h->head, i);
     auto * v = c->val.load();
+    // cells before i+1 are all scaned. Note that in the fast path q->head is directly FAAed.
     advanceEndForLinearizability(&q->head, i + 1);
+    // if v is still invalid, that means the dequeuer is ahead of all enqueuers. Return empty
     return v == gNeverValue ? nullptr : v;
 }
 
@@ -351,11 +357,13 @@ void * dequeue(Queue * q, Handle * h) {
     int64_t cellId = 0;
     for (auto p = PATIENCE; p >= 0; --p) {
         std::tie(cellId, v) = dequeueFast(q, h);
+        // gNeverValue means we need to find for next cell
         if (v != gNeverValue)
             break;
     }
     if (v == gNeverValue)
-        v = dequeueSlow(q, h, cellId);
+        v = dequeueSlow(q, h, cellId); // lost PATIENCE
+    // got value, do not return too early, try to help peer
     if (v != nullptr) {
         helpDequeue(q, h, h->deqPeer);
         h->deqPeer = h->deqPeer->next;
