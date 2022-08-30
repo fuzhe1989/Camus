@@ -176,17 +176,17 @@ CheckOptions:
   - key: readability-identifier-naming.EnumCase
     value: CamelCase
   - key: readability-identifier-naming.LocalVariableCase
-    value: lower_case
+    value: camelBack
   - key: readability-identifier-naming.StaticConstantCase
     value: aNy_CasE
   - key: readability-identifier-naming.MemberCase
-    value: lower_case
+    value: camelBack
   - key: readability-identifier-naming.PrivateMemberPrefix
-    value: ''
+    value: '_'
   - key: readability-identifier-naming.ProtectedMemberPrefix
-    value: ''
+    value: '_'
   - key: readability-identifier-naming.PublicMemberCase
-    value: lower_case
+    value: camelBack
   - key: readability-identifier-naming.MethodCase
     value: camelBack
   - key: readability-identifier-naming.PrivateMethodPrefix
@@ -194,13 +194,13 @@ CheckOptions:
   - key: readability-identifier-naming.ProtectedMethodPrefix
     value: ''
   - key: readability-identifier-naming.ParameterPackCase
-    value: lower_case
+    value: camelBack
   - key: readability-identifier-naming.StructCase
     value: CamelCase
   - key: readability-identifier-naming.TemplateTemplateParameterCase
     value: CamelCase
   - key: readability-identifier-naming.TemplateUsingCase
-    value: lower_case
+    value: camelBack
   - key: readability-identifier-naming.TypeTemplateParameterCase
     value: CamelCase
   - key: readability-identifier-naming.TypedefCase
