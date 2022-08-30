@@ -13,6 +13,7 @@ conan_basic_setup()
 find_package(GTest)
 find_package(Boost)
 find_package(magic_enum)
+find_package(robin-hood-hashing)
 
 add_subdirectory(src)
 add_subdirectory(tests)
