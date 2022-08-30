@@ -4,7 +4,7 @@
 #include <tuple>
 
 // This file is based on the following paper:
-// https://dl.acm.org/doi/pdf/10.1145/2851141.2851168?casa_token=GCFNpGQM8bkAAAAA:55uybX74gAnT58GRrJU-QHerU8gFwkeMmp46a7cX2hE782_KyK_qMVXfMmiM007jGxn_OhLKbd8
+// https://dl.acm.org/doi/pdf/10.1145/2851141.2851168
 //
 // Note that the author already opensourced his code at https://github.com/chaoran/fast-wait-free-queue
 
@@ -46,6 +46,9 @@ struct EnqueueReq {
 
 struct DequeueReq {
     // both shared between dequeueSlow and helpDequeue
+    // difference between id and state.id:
+    // - id only changed when start a new request
+    // - state.id changed during the processing of a request
     std::atomic<int64_t> id = 0;
     std::atomic<State> state;
 
@@ -290,29 +293,48 @@ void helpDequeue(Queue * q, Handle * h, Handle * helpee) {
     // s.id < id: s falls behind and we can't help they.
     if (!s.pending || s.id < id)
         return;
+    // prior is a flag for acknowledging changes to s.id
     auto prior = id;
+    // i: last searched id (may be or may not be cand)
     auto i = id;
     int64_t cand = 0;
     for (;;) {
+        // s.id != prior: there are two change points, one at `dequeueSlow` which denotes a new request,
+        //   one at below denotes a candidate is found. In neither case should we continue the search.
         for (auto * hc = ha; !cand && s.id == prior;) {
             auto * c = findCell(&hc, ++i);
             auto * v = helpEnqueue(q, h, c, i);
+            // v == nullptr: no enqueuers reached i, we could wait here. TODO
+            // v has value and seems no other dequeuers claimed v, try to claim it.
             if (v == nullptr || (v != gNeverValue && c->deq.load() == nullptr))
                 cand = i;
             else
+                // check if s is changed, see above
                 s = r->state.load();
         }
         if (cand) {
+            // Claim r's target is cand now. Also interrupt other helpers.
             cas(r->state, State{true, prior}, {true, cand});
             s = r->state.load();
         }
+        // !s.pending: helpee already finished.
+        // r->id != id: helpee started a new request.
         if (!s.pending || r->id.load() != id)
             return;
         auto * c = findCell(&ha, s.id);
+        // c->val == gNeverValue: terminal status, c is over.
+        // cas succeed: claimed succeed.
+        // c->deq == r: another helper did what we intend to do.
         if (c->val == gNeverValue || cas(c->deq, nullptr, r) == nullptr || c->deq.load() == r) {
+            // finish this request
             cas(r->state, s, {false, s.id});
             return;
         }
+        // cand == 0 or i
+        // i > prior
+        // s.id could be cand or another cand from another helpee.
+        // persistent s.id to prior for check at L304.
+        // the if is to ensure the monotonicity of our search.
         prior = s.id;
         if (s.id >= i) {
             cand = 0;
