@@ -7,7 +7,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace ds::tests {
+namespace hf::tests {
 namespace {
 
 template <typename T>
@@ -44,4 +44,4 @@ TYPED_TEST(SpinLockTest, testLock) {
 }
 
 } // namespace
-} // namespace ds::tests
+} // namespace hf::tests
