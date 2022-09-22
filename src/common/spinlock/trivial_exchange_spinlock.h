@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <thread>
 
-namespace ds {
+namespace hf {
 class TrivialSpinLock {
 public:
     TrivialSpinLock() = default;
@@ -23,5 +23,5 @@ public:
 private:
     alignas(64) std::atomic<int64_t> m_lock{0};
 };
-} // namespace ds
+} // namespace hf
 
