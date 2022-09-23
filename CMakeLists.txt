@@ -18,6 +18,8 @@ find_package(Boost)
 find_package(magic_enum)
 find_package(robin_hood)
 find_package(scn)
+find_package(spdlog)
+find_package(fmt)
 
 add_subdirectory(src)
 add_subdirectory(tests)
