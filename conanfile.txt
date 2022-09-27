@@ -9,6 +9,5 @@ fmt/9.1.0
 
 [generators]
 cmake
-CMakeDeps
-CMakeToolchain
+cmake_find_package
 
