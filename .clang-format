@@ -17,7 +17,7 @@ BinPackParameters: false
 BreakBeforeBraces: Attach
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList : BeforeComma
-ColumnLimit: 120
+ColumnLimit: 0
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 Cpp11BracedListStyle: true
 EmptyLineBeforeAccessModifier: LogicalBlock
