@@ -1,6 +1,6 @@
 [requires]
 gtest/cci.20210126
-boost/1.79.0
+boost/1.80.0
 magic_enum/0.8.0
 robin-hood-hashing/3.11.5
 scnlib/1.1.2
@@ -9,5 +9,6 @@ fmt/9.1.0
 
 [generators]
 cmake
+cmake_paths
 cmake_find_package
 

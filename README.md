@@ -22,19 +22,17 @@ Hf is an experimental project.
 1. Configuration.
 1. ...
 
-### The toy applications
-
-Currently only one application is planning.
-
 ### Build a key-value storage engine with strong schema support
 
-The first version will be:
-1. built on RocksDB.
-1. single node.
+TODO
 
 ## Build
 
 Install [conan](https://conan.io/).
+
+```
+pip install conan
+```
 
 Then:
 
