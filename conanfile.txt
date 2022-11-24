@@ -7,6 +7,10 @@ scnlib/1.1.2
 spdlog/1.10.0
 fmt/9.1.0
 folly/2022.01.31.00
+asio-grpc/2.3.0
+openssl/1.1.1s
+zlib/1.2.13
+libunwind/1.6.2
 
 [generators]
 cmake
