@@ -6,6 +6,7 @@ robin-hood-hashing/3.11.5
 scnlib/1.1.2
 spdlog/1.10.0
 fmt/9.1.0
+folly/2022.01.31.00
 
 [generators]
 cmake

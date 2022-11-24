@@ -4,7 +4,7 @@ project(Hf)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fcoroutines-ts")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fcoroutines -Wno-deprecated")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
 include (${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
@@ -18,6 +18,7 @@ find_package(robin_hood)
 find_package(scn)
 find_package(spdlog)
 find_package(fmt)
+find_package(folly)
 
 add_subdirectory(src)
 add_subdirectory(tests)
