@@ -19,6 +19,7 @@ find_package(scn)
 find_package(spdlog)
 find_package(fmt)
 find_package(folly)
+find_package(asio-grpc)
 
 add_subdirectory(src)
 add_subdirectory(tests)
