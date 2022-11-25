@@ -4,7 +4,7 @@
 
 #include <map>
 
-namespace hf::rpc {
+namespace camus::rpc {
 class Server {
 public:
     enum class Status {
@@ -33,4 +33,4 @@ public:
     };
     using ServiceMap = std::map<std::string, ServiceProperty>;
 };
-} // namespace hf::rpc
+} // namespace camus::rpc

@@ -7,7 +7,7 @@
 #include <thread>
 #include <vector>
 
-namespace hf::tests {
+namespace camus::tests {
 namespace {
 
 TEST(Scnlib, testReadString) {
@@ -39,4 +39,4 @@ TEST(Scnlib, testReturnTuple) {
 }
 
 } // namespace
-} // namespace hf::tests
+} // namespace camus::tests

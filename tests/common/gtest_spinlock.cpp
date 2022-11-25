@@ -1,13 +1,13 @@
-#include <gtest/gtest.h>
 #include <common/spinlock/nginx_spinlock.h>
-#include <common/spinlock/trivial_exchange_spinlock.h>
 #include <common/spinlock/ticket_spinlock.h>
+#include <common/spinlock/trivial_exchange_spinlock.h>
+#include <gtest/gtest.h>
 
+#include <cstdint>
 #include <thread>
 #include <vector>
-#include <cstdint>
 
-namespace hf::tests {
+namespace camus::tests {
 namespace {
 
 template <typename T>
@@ -44,4 +44,4 @@ TYPED_TEST(SpinLockTest, testLock) {
 }
 
 } // namespace
-} // namespace hf::tests
+} // namespace camus::tests
