@@ -1,11 +1,12 @@
 #pragma once
 
 #include <emmintrin.h>
+
 #include <atomic>
 #include <cstdint>
 #include <thread>
 
-namespace hf {
+namespace camus {
 class TicketSpinLock {
 public:
     TicketSpinLock() = default;
@@ -22,10 +23,9 @@ public:
     void unlock() {
         m_lock.fetch_add(1, std::memory_order_release);
     }
-private:
 
+private:
     alignas(64) std::atomic<int64_t> m_ticket{0};
     alignas(64) std::atomic<int64_t> m_lock{0};
 };
-} // namespace hf
-
+} // namespace camus

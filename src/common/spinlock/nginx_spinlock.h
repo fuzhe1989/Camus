@@ -1,11 +1,12 @@
 #pragma once
 
 #include <emmintrin.h>
+
 #include <atomic>
 #include <cstdint>
 #include <thread>
 
-namespace hf {
+namespace camus {
 class NginxSpinLock {
 public:
     NginxSpinLock() = default;
@@ -31,13 +32,13 @@ public:
     void unlock() {
         m_lock.store(0, std::memory_order_release);
     }
+
 private:
     bool setToOne() {
         int64_t expected = 0;
-        return m_lock.load(std::memory_order_relaxed) == 0 &&
-            m_lock.compare_exchange_weak(expected, 1, std::memory_order_acq_rel);
+        return m_lock.load(std::memory_order_relaxed) == 0 && m_lock.compare_exchange_weak(expected, 1, std::memory_order_acq_rel);
     }
 
     alignas(64) std::atomic<int64_t> m_lock{0};
 };
-} // namespace hf
+} // namespace camus

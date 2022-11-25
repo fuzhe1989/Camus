@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <thread>
 
-namespace hf {
+namespace camus {
 class TrivialSpinLock {
 public:
     TrivialSpinLock() = default;
@@ -20,8 +20,8 @@ public:
     void unlock() {
         m_lock.store(0, std::memory_order_release);
     }
+
 private:
     alignas(64) std::atomic<int64_t> m_lock{0};
 };
-} // namespace hf
-
+} // namespace camus

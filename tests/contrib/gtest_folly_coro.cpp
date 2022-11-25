@@ -5,7 +5,7 @@
 #include <folly/experimental/coro/GtestHelpers.h>
 #include <folly/experimental/coro/Task.h>
 
-namespace hf::tests {
+namespace camus::tests {
 namespace {
 TEST(FollyCoro, testProducerConsumer) {
     folly::coro::BoundedQueue<int, true, true> q(1);
@@ -33,4 +33,4 @@ TEST(FollyCoro, testProducerConsumer) {
     }());
 }
 } // namespace
-} // namespace hf::tests
+} // namespace camus::tests
