@@ -11,6 +11,8 @@ asio-grpc/2.3.0
 openssl/1.1.1s
 zlib/1.2.13
 libunwind/1.6.2
+mimalloc/2.0.6
+cmake/3.25.0
 
 [generators]
 cmake
