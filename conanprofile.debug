@@ -9,4 +9,8 @@ compiler.libcxx=libstdc++11
 build_type=Debug
 [options]
 [build_requires]
+cmake/3.25.0
+openssl/1.1.1s
+zlib/1.2.13
+libunwind/1.6.2
 [env]

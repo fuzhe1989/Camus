@@ -10,6 +10,8 @@ Install [conan](https://conan.io/).
 pip install conan
 ```
 
+Install gcc-11
+
 Then:
 
 ```
