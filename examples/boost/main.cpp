@@ -2,7 +2,7 @@
 #include <iostream>
 
 int main() {
-    boost::lockfree::queue<int> q;
+    boost::lockfree::queue<int> q(1);
     q.push(1);
     int ret = 0;
     q.pop(ret);
