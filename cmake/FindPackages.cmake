@@ -7,4 +7,5 @@ find_package(spdlog)
 find_package(fmt)
 find_package(folly)
 find_package(asio-grpc)
+find_package(mimalloc)
 
