@@ -5,7 +5,6 @@ target_link_libraries (gtests_contrib PRIVATE
     GTest::gtest
     GTest::gtest_main
     scn::scn
+    spdlog::spdlog
     ${Folly_folly_LINK_LIBS}
-    glog
-    gflags
 )

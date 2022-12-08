@@ -1,5 +1,5 @@
-add_executable (example main.cpp)
-target_link_libraries (example PRIVATE
+add_executable (boost_example main.cpp)
+target_link_libraries (boost_example PRIVATE
     Boost::boost
 )
 
