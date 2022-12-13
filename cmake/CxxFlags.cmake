@@ -18,10 +18,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   add_cxx_flags("-fcoroutines-ts")
   add_cxx_link_flags("-latomic")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  add_cxx_flags("-fcoroutines -Wno-mismatched-new-delete")
+  add_cxx_flags("-fcoroutines -Wno-mismatched-new-delete -Wno-deprecated")
 endif()
 
-add_cxx_flags("-Wall -Wextra -Werror -Wpedantic")
+add_cxx_flags("-Wall -Wextra -Werror")
 add_cxx_link_flags("-pthread")
 
 message(STATUS "CMAKE_CXX_FLAGS is ${CMAKE_CXX_FLAGS}")

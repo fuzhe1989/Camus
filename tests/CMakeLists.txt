@@ -1,5 +1,6 @@
 if (ENABLE_TESTS)
-  include_directories (${PROJECT_SOURCE_DIR}/src)
+  # must add main first
+  add_subdirectory (main)
 
   add_subdirectory (common)
   add_subdirectory (contrib)
