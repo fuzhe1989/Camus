@@ -46,7 +46,7 @@ public:
     constexpr operator T &() { return t; }
     // NOLINTEND(google-explicit-constructor)
 
-    constexpr auto operator<=>(const Self &) const = default;
+    auto operator<=>(const Self &) const = default;
 
     constexpr T & toUnderType() { return t; }
     constexpr const T & toUnderType() const { return t; }
