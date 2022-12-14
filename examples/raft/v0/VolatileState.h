@@ -7,5 +7,7 @@ private:
 };
 
 class LeaderVolatileState {
+public:
+private:
 };
 } // namespace camus::raft::v0
