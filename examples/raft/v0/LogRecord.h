@@ -20,6 +20,6 @@ public:
 class LogRecord {
 public:
 private:
-    LogRecordType type_;
+    // LogRecordType type_;
 };
 } // namespace camus::raft::v0
