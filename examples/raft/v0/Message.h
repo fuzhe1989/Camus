@@ -11,18 +11,18 @@
 namespace camus::raft::v0 {
 STRONG_TYPEDEF(int64_t, Timestamp);
 
-struct Machine;
+struct MachineBase;
 struct Message {
     Timestamp sentTime{0};
     Timestamp arriveTime{0};
     int64_t requestId{0};
     bool isRequest = true;
-    Machine * from = nullptr;
+    MachineBase * from = nullptr;
     std::any payload;
 
     static int64_t nextRequestId;
 
-    static Message makeReq(Timestamp now, Machine * from, auto && payload) {
+    static Message makeReq(Timestamp now, MachineBase * from, auto && payload) {
         Message msg;
         msg.sentTime = now;
         msg.from = from;
@@ -32,7 +32,7 @@ struct Message {
         return msg;
     }
 
-    static Message makeRsp(Timestamp now, Machine * from, int64_t requestId, auto && payload) {
+    static Message makeRsp(Timestamp now, MachineBase * from, int64_t requestId, auto && payload) {
         Message msg;
         msg.sentTime = now;
         msg.from = from;
