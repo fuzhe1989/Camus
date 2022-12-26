@@ -28,7 +28,7 @@ struct MachineBase {
     void start(Timestamp now);
     void shutdown(bool critical);
     void handle(Timestamp now);
-    void handleMessage(Timestamp now, const Message & msg);
+    void handleMessages(Timestamp now);
     void insertMessage(Message msg);
     void receive(Timestamp now, Message msg);
     void triggerEvent(Timestamp now, MachineEvent e);
@@ -39,10 +39,11 @@ struct MachineBase {
     virtual void startImpl(Timestamp now) = 0;
     virtual void shutdownImpl(bool critical) = 0;
     virtual void handleImpl(Timestamp now) = 0;
-    virtual void handleMessageImpl(Timestamp now, const Message & msg) = 0;
+    virtual void handleMessage(Timestamp now, Message msg) = 0;
+    virtual void handleRequestTimeout(Timestamp now, Message msg) = 0;
 
     NodeId id;
-    std::map<NodeId, MachineBase *> * machines = nullptr;
+    const std::map<NodeId, MachineBase *> * machines = nullptr;
 
     std::deque<Message> mailbox;
     std::map<int64_t, Message> ongoingRequests;
@@ -51,3 +52,7 @@ struct MachineBase {
     std::optional<Timestamp> recoverTime;
 };
 } // namespace camus::raft::v0
+
+#define MLOG(fmt, ...)
+
+#define MASSERT(condition, fmt, ...)

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <fmt/format.h>
+
+#include <magic_enum.hpp>
 #include <string>
 #include <string_view>
 
@@ -26,6 +29,10 @@ public:
 
     std::string_view value() const {
         return value_;
+    }
+
+    std::string toString() const {
+        return fmt::format("type:{} key:{} value:{}", magic_enum::enum_name(type_), key_, value_);
     }
 
 private:

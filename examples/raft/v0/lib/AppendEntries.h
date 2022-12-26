@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Command.h"
+#include "Payload.h"
 #include "common.h"
 
 namespace camus::raft::v0 {
-struct AppendEntriesRequest {
+struct AppendEntriesRequest : Payload {
     // leader’s term
     Term term{0};
     // so follower can redirect clients
@@ -17,12 +18,16 @@ struct AppendEntriesRequest {
     std::vector<Command> entries;
     // leader’s commitIndex
     LogIndex leaderCommit{0};
+
+    std::string toString() const override;
 };
 
-struct AppendEntriesResponse {
+struct AppendEntriesResponse : Payload {
     // currentTerm, for leader to update itself
     Term term{0};
     // true if follower contained entry matching prevLogIndex and prevLogTerm
     bool success = false;
+
+    std::string toString() const override;
 };
 } // namespace camus::raft::v0

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+
+#include "Message.h"
 #include "common.h"
 
 namespace camus::raft::v0 {
@@ -15,5 +18,17 @@ struct LeaderVolatileState {
     std::vector<LogIndex> nextIndice;
     // for each server, index of highest log entry known to be replicated on server (initialized to 0, increases monotonically)
     std::vector<LogIndex> matchIndice;
+
+    Timestamp leaseStart{0};
+    Timestamp leaseEnd{0};
+
+    std::map<LogIndex, Message> pendingRequests;
+};
+
+struct FollowerVolatileState {
+    Timestamp lastHeartbeatTime{0};
+};
+
+struct CandidateVolatileState {
 };
 } // namespace camus::raft::v0
