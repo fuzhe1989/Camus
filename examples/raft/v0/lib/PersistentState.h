@@ -3,8 +3,7 @@
 #include <optional>
 #include <vector>
 
-#include "Command.h"
-#include "common.h"
+#include "LogRecord.h"
 
 namespace camus::raft::v0 {
 struct PersistentState {
@@ -15,6 +14,6 @@ struct PersistentState {
     // known leader of current term
     std::optional<NodeId> leader;
     // log entries; each entry contains command for state machine, and term when entry was received by leader (first index is 1)
-    std::vector<Command> logs;
+    std::vector<LogRecord> logs;
 };
 } // namespace camus::raft::v0

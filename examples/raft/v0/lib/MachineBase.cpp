@@ -100,6 +100,8 @@ void MachineBase::checkRecover(Timestamp now) {
 }
 
 void MachineBase::send(Timestamp now, MachineBase * m, Message msg) {
+    if (msg.isRequest)
+        ongoingRequests[msg.requestId] = msg;
     if (folly::Random::rand32(100) < parameters::networkPacketLossPercent) {
         MLOG("send message lost to:{} msg:{}", m->id, msg);
     } else if (state == MachineState::NET_OUT_BROKEN) {

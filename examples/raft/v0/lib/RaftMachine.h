@@ -28,11 +28,14 @@ struct RaftMachine : MachineBase {
     void handleWriteRequest(Timestamp now, Message msg);
     void handleReadRequest(Timestamp now, Message msg);
 
+    void sendAppendEntriesRequests(Timestamp now);
+
     Role role() const;
 
     PersistentState persistentState;
     CommonVolatileState volatileState;
     std::variant<LeaderVolatileState, FollowerVolatileState, CandidateVolatileState> roleState;
     std::map<std::string, std::string> data;
+    std::vector<NodeId> nodes;
 };
 } // namespace camus::raft::v0

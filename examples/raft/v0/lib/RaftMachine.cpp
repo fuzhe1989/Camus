@@ -83,22 +83,29 @@ void RaftMachine::handleWriteRequest(Timestamp now, Message msg) {
     auto payload = dynamic_pointer_cast<WriteRequest>(msg.payload);
     auto rsp = std::make_shared<WriteResponse>();
 
-    [&] {
-        if (role() != Role::LEADER) {
-            rsp->success = false;
-            rsp->leader = persistentState.voteFor;
-            return;
-        }
-        auto & leaderState = std::get<LeaderVolatileState>(roleState);
-        if (leaderState.leaseEnd <= now + parameters::heartbeatInterval) {
-            rsp->success = false;
-            return;
-        }
-        persistentState.logs.push_back(payload->command);
-        leaderState.pendingRequests[LogIndex(persistentState.logs.size() - 1)] = msg;
-    }();
+    auto sendBack = [&] {
+        send(now, msg.from, Message::makeRsp(now, this, msg.requestId, std::move(rsp)));
+    };
 
-    // TODO
+    if (role() != Role::LEADER) {
+        rsp->success = false;
+        rsp->leader = persistentState.voteFor;
+        sendBack();
+        return;
+    }
+    auto & leaderState = std::get<LeaderVolatileState>(roleState);
+    if (leaderState.leaseEnd <= now + parameters::heartbeatInterval) {
+        rsp->success = false;
+        sendBack();
+        return;
+    }
+    persistentState.logs.push_back({persistentState.currentTerm, payload->command});
+    if (nodes.size() == 1) {
+        // TODO: directly commit
+    } else {
+        leaderState.pendingWriteRequests[LogIndex(persistentState.logs.size() - 1)] = msg;
+        sendAppendEntriesRequests(now);
+    }
 }
 
 void RaftMachine::handleReadRequest(Timestamp now, Message msg) {
@@ -120,5 +127,35 @@ void RaftMachine::handleReadRequest(Timestamp now, Message msg) {
         }
     }
     send(now, msg.from, Message::makeRsp(now, this, msg.requestId, std::move(rsp)));
+}
+
+void RaftMachine::sendAppendEntriesRequests(Timestamp now) {
+    // TODO
+    auto lastIndex = LogIndex(persistentState.logs.size());
+    auto & leaderState = std::get<LeaderVolatileState>(roleState);
+    for (const auto & nodeId : nodes) {
+        if (nodeId == id)
+            continue;
+        auto nextIndex = leaderState.nextIndice[nodeId];
+        if (nextIndex < lastIndex) {
+            auto payload = std::make_shared<AppendEntriesRequest>();
+            payload->term = persistentState.currentTerm;
+            payload->leaderId = id;
+            payload->prevLogIndex = LogIndex(nextIndex - 1);
+            payload->prevLogTerm = persistentState.logs[nextIndex - 1].term;
+            for (auto i = nextIndex; i < lastIndex; ++i)
+                payload->entries.push_back(persistentState.logs[nextIndex]);
+            payload->leaderCommit = volatileState.commitIndex;
+
+            send(
+                now,
+                machines->at(nodeId),
+                Message::makeReq(
+                    now,
+                    Interval(parameters::appendEntriesRequestTimeout),
+                    this,
+                    std::move(payload)));
+        }
+    }
 }
 } // namespace camus::raft::v0

@@ -9,3 +9,5 @@ find_package(folly)
 find_package(asio-grpc)
 find_package(mimalloc)
 
+target_compile_definitions(spdlog::spdlog INTERFACE -DSPDLOG_ACTIVE_LEVEL=1)
+

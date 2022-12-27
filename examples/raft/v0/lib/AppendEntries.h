@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Command.h"
+#include "LogRecord.h"
 #include "Payload.h"
 #include "common.h"
 
@@ -15,7 +15,7 @@ struct AppendEntriesRequest : Payload {
     // term of prevLogIndex entry
     Term prevLogTerm{0};
     // log entries to store (empty for heartbeat; may send more than one for efficiency)
-    std::vector<Command> entries;
+    std::vector<LogRecord> entries;
     // leader’s commitIndex
     LogIndex leaderCommit{0};
 
