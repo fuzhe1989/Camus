@@ -12,7 +12,7 @@ struct ReadRequest : Payload {
 };
 
 struct ReadResponse : Payload {
-    bool success = false;
+    Status status;
     std::optional<NodeId> leader;
     std::optional<std::string> value;
 

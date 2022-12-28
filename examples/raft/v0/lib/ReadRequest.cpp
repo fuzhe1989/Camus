@@ -8,6 +8,6 @@ std::string ReadRequest::toString() const {
 }
 
 std::string ReadResponse::toString() const {
-    return fmt::format("type:ReadResponse success:{} leader:{} value:{}", success, leader.value_or(NodeId{}), value.value_or(""));
+    return fmt::format("type:ReadResponse status:{} leader:{} value:{}", status.toString(), leader.value_or(NodeId{}), value.value_or(""));
 }
 } // namespace camus::raft::v0

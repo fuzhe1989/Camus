@@ -14,8 +14,8 @@ std::string RequestVoteRequest::toString() const {
 
 std::string RequestVoteResponse::toString() const {
     return fmt::format(
-        "type:RequestVoteResponse term:{} voteGranted:{}",
+        "type:RequestVoteResponse term:{} status:{}",
         term,
-        voteGranted);
+        status.toString());
 }
 } // namespace camus::raft::v0

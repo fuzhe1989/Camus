@@ -37,12 +37,15 @@ void MachineBase::handleMessages(Timestamp now) {
 
         MLOG("handle message: {}", msg);
 
-        if (!msg.isRequest && !ongoingRequests.contains(msg.requestId)) {
+        if (msg.isRequest) {
+            handleRequest(now, std::move(msg));
+        } else if (ongoingRequests.contains(msg.requestId)) {
+            auto request = std::move(ongoingRequests[msg.requestId]);
+            ongoingRequests.erase(msg.requestId);
+            handleResponse(now, std::move(request), std::move(msg));
+        } else {
             MLOG("discard response: corresponding request not found");
-            continue;
         }
-
-        handleMessage(now, std::move(msg));
     }
 }
 

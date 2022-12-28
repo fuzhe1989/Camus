@@ -26,7 +26,7 @@ struct AppendEntriesResponse : Payload {
     // currentTerm, for leader to update itself
     Term term{0};
     // true if follower contained entry matching prevLogIndex and prevLogTerm
-    bool success = false;
+    Status status;
 
     std::string toString() const override;
 };

@@ -6,9 +6,13 @@ namespace camus::raft::v0 {
 std::string AppendEntriesRequest::toString() const {
     std::vector<std::string> entries;
     for (const auto & c : this->entries)
-        entries.push_back(c.toString());
+        entries.push_back(
+            fmt::format(
+                "(term:{} command:{})",
+                c.term,
+                c.command.toString()));
     return fmt::format(
-        "type:AppendEntriesRequest term:{} leaderId:{} prevLogIndex:{} prevLogTerm:{} leaderCommit:{} entries:{}",
+        "type:AppendEntriesRequest term:{} leaderId:{} prevLogIndex:{} prevLogTerm:{} leaderCommit:{} entries:[{}]",
         term,
         leaderId,
         prevLogIndex,
@@ -19,8 +23,8 @@ std::string AppendEntriesRequest::toString() const {
 
 std::string AppendEntriesResponse::toString() const {
     return fmt::format(
-        "type:AppendEntriesResponse term:{} success:{}",
+        "type:AppendEntriesResponse term:{} status:{}",
         term,
-        success);
+        status.toString());
 }
 } // namespace camus::raft::v0

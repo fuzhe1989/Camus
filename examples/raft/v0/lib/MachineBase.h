@@ -39,7 +39,8 @@ struct MachineBase {
     virtual void startImpl(Timestamp now) = 0;
     virtual void shutdownImpl(bool critical) = 0;
     virtual void handleImpl(Timestamp now) = 0;
-    virtual void handleMessage(Timestamp now, Message msg) = 0;
+    virtual void handleRequest(Timestamp now, Message msg) = 0;
+    virtual void handleResponse(Timestamp now, Message request, Message response) = 0;
     virtual void handleRequestTimeout(Timestamp now, Message msg) = 0;
 
     NodeId id;

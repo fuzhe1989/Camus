@@ -21,7 +21,7 @@ struct RequestVoteResponse : Payload {
     // currentTerm, for candidate to update itself
     Term term{0};
     // true means candidate received vote
-    bool voteGranted = false;
+    Status status;
 
     std::string toString() const override;
 };

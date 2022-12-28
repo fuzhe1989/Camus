@@ -37,15 +37,11 @@ void RaftMachine::handleImpl(Timestamp now) {
     (void)now;
 }
 
-void RaftMachine::handleMessage(Timestamp now, Message msg) {
+void RaftMachine::handleRequest(Timestamp now, Message msg) {
     if (dynamic_cast<AppendEntriesRequest *>(msg.payload.get())) {
         handleAppendEntriesRequest(now, std::move(msg));
-    } else if (dynamic_cast<AppendEntriesResponse *>(msg.payload.get())) {
-        handleAppendEntriesResponse(now, std::move(msg));
     } else if (dynamic_cast<RequestVoteRequest *>(msg.payload.get())) {
         handleRequestVoteRequest(now, std::move(msg));
-    } else if (dynamic_cast<RequestVoteResponse *>(msg.payload.get())) {
-        handleRequestVoteResponse(now, std::move(msg));
     } else if (dynamic_cast<WriteRequest *>(msg.payload.get())) {
         handleWriteRequest(now, std::move(msg));
     } else if (dynamic_cast<ReadRequest *>(msg.payload.get())) {
@@ -55,16 +51,27 @@ void RaftMachine::handleMessage(Timestamp now, Message msg) {
     }
 }
 
+void RaftMachine::handleResponse(Timestamp now, Message request, Message response) {
+    if (dynamic_cast<AppendEntriesResponse *>(response.payload.get())) {
+        handleAppendEntriesResponse(now, std::move(request), std::move(response));
+    } else if (dynamic_cast<RequestVoteResponse *>(response.payload.get())) {
+        handleRequestVoteResponse(now, std::move(request), std::move(response));
+    } else {
+        MASSERT(false, "invalid message type:{}", response);
+    }
+}
+
 void RaftMachine::handleAppendEntriesRequest(Timestamp now, Message msg) {
     // TODO
     (void)now;
     (void)msg;
 }
 
-void RaftMachine::handleAppendEntriesResponse(Timestamp now, Message msg) {
+void RaftMachine::handleAppendEntriesResponse(Timestamp now, Message request, Message response) {
     // TODO
     (void)now;
-    (void)msg;
+    (void)request;
+    (void)response;
 }
 
 void RaftMachine::handleRequestVoteRequest(Timestamp now, Message msg) {
@@ -73,10 +80,11 @@ void RaftMachine::handleRequestVoteRequest(Timestamp now, Message msg) {
     (void)msg;
 }
 
-void RaftMachine::handleRequestVoteResponse(Timestamp now, Message msg) {
+void RaftMachine::handleRequestVoteResponse(Timestamp now, Message request, Message response) {
     // TODO
     (void)now;
-    (void)msg;
+    (void)request;
+    (void)response;
 }
 
 void RaftMachine::handleWriteRequest(Timestamp now, Message msg) {
@@ -88,7 +96,7 @@ void RaftMachine::handleWriteRequest(Timestamp now, Message msg) {
     };
 
     if (role() != Role::LEADER) {
-        rsp->success = false;
+        rsp->status = Status(kNotLeader);
         rsp->leader = persistentState.voteFor;
         sendBack();
         return;
@@ -130,7 +138,6 @@ void RaftMachine::handleReadRequest(Timestamp now, Message msg) {
 }
 
 void RaftMachine::sendAppendEntriesRequests(Timestamp now) {
-    // TODO
     auto lastIndex = LogIndex(persistentState.logs.size());
     auto & leaderState = std::get<LeaderVolatileState>(roleState);
     for (const auto & nodeId : nodes) {

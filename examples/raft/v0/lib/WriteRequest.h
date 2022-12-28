@@ -12,7 +12,7 @@ struct WriteRequest : Payload {
 };
 
 struct WriteResponse : Payload {
-    bool success = false;
+    Status status;
     std::optional<NodeId> leader;
 
     std::string toString() const override;
