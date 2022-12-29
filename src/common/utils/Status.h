@@ -50,6 +50,10 @@ public:
         return static_cast<StatusCode>(ptr_ & kCodeMask);
     }
 
+    bool isOk() const {
+        return code() == StatusCode(0);
+    }
+
     std::string_view message() const {
         auto * impl = getImpl();
         if (impl)

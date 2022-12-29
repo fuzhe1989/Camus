@@ -21,12 +21,13 @@ struct LeaderVolatileState {
 
     Timestamp leaseStart{0};
     Timestamp leaseEnd{0};
+    Timestamp lastHeartbeatSentTime{0};
 
     std::map<LogIndex, Message> pendingWriteRequests;
 };
 
 struct FollowerVolatileState {
-    Timestamp lastHeartbeatTime{0};
+    Timestamp lastHeartbeatReceivedTime{0};
 };
 
 struct CandidateVolatileState {

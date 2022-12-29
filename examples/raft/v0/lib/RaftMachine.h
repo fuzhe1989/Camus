@@ -29,9 +29,15 @@ struct RaftMachine : MachineBase {
     void handleWriteRequest(Timestamp now, Message msg);
     void handleReadRequest(Timestamp now, Message msg);
 
-    void sendAppendEntriesRequests(Timestamp now);
-
     Role role() const;
+    LeaderVolatileState & asLeader();
+    FollowerVolatileState & asFollower();
+    CandidateVolatileState & asCandidate();
+
+    void sendAppendEntriesRequests(Timestamp now);
+    void sendAppendEntriesRequests(Timestamp now, const NodeId & nodeId);
+    void sendBack(Timestamp now, const Message & request, std::shared_ptr<Payload> payload);
+    void tryPromoteCommitIndex();
 
     PersistentState persistentState;
     CommonVolatileState volatileState;

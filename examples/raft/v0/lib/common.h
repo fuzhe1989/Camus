@@ -7,11 +7,13 @@
 #include "common/utils/StrongTypedef.h"
 
 namespace camus::raft::v0 {
-STRONG_TYPEDEF(int64_t, Term);
+STRONG_TYPEDEF(size_t, Term);
 STRONG_TYPEDEF(std::string, NodeId);
-STRONG_TYPEDEF(int64_t, LogIndex);
-STRONG_TYPEDEF(uint64_t, Timestamp);
-STRONG_TYPEDEF(uint64_t, Interval);
+STRONG_TYPEDEF(size_t, LogIndex);
+STRONG_TYPEDEF(size_t, Timestamp);
+STRONG_TYPEDEF(size_t, Interval);
 
-inline StatusCode kNotLeader = 1;
+inline constexpr StatusCode kNotLeader = 1;
+inline constexpr StatusCode kStaleTerm = 2;
+inline constexpr StatusCode kPrevLogMismatch = 3;
 } // namespace camus::raft::v0
