@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 
 #include "Message.h"
 #include "common.h"
@@ -31,5 +32,6 @@ struct FollowerVolatileState {
 };
 
 struct CandidateVolatileState {
+    std::set<NodeId> votes;
 };
 } // namespace camus::raft::v0

@@ -63,14 +63,8 @@ void RaftMachine::handleResponse(Timestamp now, Message request, Message respons
 }
 
 void RaftMachine::handleAppendEntriesRequest(Timestamp now, Message msg) {
-    (void)now;
-    (void)msg;
-
     auto payload = dynamic_pointer_cast<AppendEntriesRequest>(msg.payload);
     auto rsp = std::make_shared<AppendEntriesResponse>();
-
-    // TODO: what if payload->term == persistentState.currentTerm while payload->leaderId != persistentState.leaderId?
-    // should we reject this request or overwrite persistentState?
 
     if (payload->term < persistentState.currentTerm) {
         rsp->status = Status(kStaleTerm);
@@ -79,24 +73,18 @@ void RaftMachine::handleAppendEntriesRequest(Timestamp now, Message msg) {
     } else if (persistentState.logs[payload->prevLogIndex - 1].term != payload->prevLogTerm) {
         rsp->status = Status(kPrevLogMismatch);
     } else {
-        if (role() != Role::FOLLOWER) {
-            roleState = FollowerVolatileState();
-            asFollower().lastHeartbeatReceivedTime = now;
-            persistentState.currentTerm = payload->term;
-            persistentState.leader = payload->leaderId;
+        if (payload->term == persistentState.currentTerm) {
+            assert(!persistentState.leader || payload->leaderId == *persistentState.leader);
         }
 
-        for (size_t i = 0; i < payload->entries.size(); ++i) {
-            auto j = payload->prevLogIndex + i - 1;
-            if (j < persistentState.logs.size()) {
-                if (persistentState.logs[j].term != payload->entries[i].term) {
-                    persistentState.logs.resize(j);
-                    persistentState.logs.push_back(payload->entries[i]);
-                }
-            } else {
-                persistentState.logs.push_back(payload->entries[i]);
-            }
-        }
+        convertToFollower(now, payload->term, payload->leaderId);
+
+        persistentState.voteFor.reset();
+        persistentState.logs.resize(payload->prevLogIndex);
+        persistentState.logs.insert(
+            persistentState.logs.end(),
+            payload->entries.begin(),
+            payload->entries.end());
 
         if (payload->leaderCommit > volatileState.commitIndex) {
             volatileState.commitIndex = std::min(
@@ -110,10 +98,6 @@ void RaftMachine::handleAppendEntriesRequest(Timestamp now, Message msg) {
 }
 
 void RaftMachine::handleAppendEntriesResponse(Timestamp now, Message request, Message response) {
-    (void)now;
-    (void)request;
-    (void)response;
-
     auto reqPayload = dynamic_pointer_cast<AppendEntriesRequest>(request.payload);
     auto rspPayload = dynamic_pointer_cast<AppendEntriesResponse>(response.payload);
 
@@ -127,12 +111,17 @@ void RaftMachine::handleAppendEntriesResponse(Timestamp now, Message request, Me
     if (reqPayload->term != persistentState.currentTerm)
         return;
 
+    if (rspPayload->term > persistentState.currentTerm) {
+        convertToFollower(now, rspPayload->term, std::nullopt);
+        return;
+    }
+
     if (rspPayload->status.isOk()) {
         auto newNextIndex = LogIndex(reqPayload->prevLogIndex + reqPayload->entries.size() + 1);
         asLeader().nextIndice[peerId] = newNextIndex;
         asLeader().matchIndice[peerId] = LogIndex(newNextIndex - 1);
 
-        tryPromoteCommitIndex();
+        tryPromoteCommitIndex(now);
     } else {
         switch (rspPayload->status.code()) {
         case kPrevLogMismatch:
@@ -146,16 +135,54 @@ void RaftMachine::handleAppendEntriesResponse(Timestamp now, Message request, Me
 }
 
 void RaftMachine::handleRequestVoteRequest(Timestamp now, Message msg) {
-    // TODO
-    (void)now;
-    (void)msg;
+    auto payload = dynamic_pointer_cast<RequestVoteRequest>(msg.payload);
+    auto rsp = std::make_shared<RequestVoteResponse>();
+
+    if (payload->term < persistentState.currentTerm) {
+        rsp->status = Status(kStaleTerm);
+    }
+
+    [&] {
+        if (persistentState.voteFor && payload->candidateId != *persistentState.voteFor) {
+            rsp->status = Status(kVoteGranted);
+            return;
+        }
+        if (payload->lastLogIndex < persistentState.logs.size()) {
+            rsp->status = Status(kStaleLogIndex);
+            return;
+        }
+        convertToFollower(now, payload->term, std::nullopt);
+        persistentState.voteFor = payload->candidateId;
+    }();
+
+    rsp->term = persistentState.currentTerm;
+    sendBack(now, msg, std::move(rsp));
 }
 
 void RaftMachine::handleRequestVoteResponse(Timestamp now, Message request, Message response) {
-    // TODO
-    (void)now;
-    (void)request;
-    (void)response;
+    auto reqPayload = dynamic_pointer_cast<RequestVoteRequest>(request.payload);
+    auto rspPayload = dynamic_pointer_cast<RequestVoteResponse>(response.payload);
+
+    if (role() != Role::CANDIDATE)
+        return;
+
+    auto peerId = response.from->id;
+    if (reqPayload->lastLogIndex != persistentState.logs.size())
+        return;
+
+    if (reqPayload->term != persistentState.currentTerm)
+        return;
+
+    if (rspPayload->term > persistentState.currentTerm) {
+        convertToFollower(now, rspPayload->term, std::nullopt);
+        return;
+    }
+
+    if (rspPayload->status.isOk()) {
+        asCandidate().votes.insert(peerId);
+        if (asCandidate().votes.size() * 2 > nodes.size())
+            convertToLeader(now);
+    }
 }
 
 void RaftMachine::handleWriteRequest(Timestamp now, Message msg) {
@@ -175,7 +202,7 @@ void RaftMachine::handleWriteRequest(Timestamp now, Message msg) {
     }
     persistentState.logs.push_back({persistentState.currentTerm, payload->command});
     if (nodes.size() == 1) {
-        // TODO: directly commit
+        tryPromoteCommitIndex(now);
     } else {
         asLeader().pendingWriteRequests[LogIndex(persistentState.logs.size())] = msg;
         sendAppendEntriesRequests(now);
@@ -245,19 +272,79 @@ void RaftMachine::sendBack(Timestamp now, const Message & request, std::shared_p
     send(now, request.from, Message::makeRsp(now, this, request.requestId, std::move(payload)));
 }
 
-void RaftMachine::tryPromoteCommitIndex() {
-    auto minIndex = LogIndex(std::numeric_limits<size_t>::max());
-    for ([[maybe_unused]] const auto & [_, v] : asLeader().matchIndice)
-        minIndex = std::min(minIndex, v);
-    minIndex = std::max(minIndex, volatileState.commitIndex);
-    for (size_t i = minIndex + 1; i <= persistentState.logs.size(); ++i) {
-        size_t cnt = 1;
+void RaftMachine::tryPromoteCommitIndex(Timestamp now) {
+    auto oldCommitIndex = volatileState.commitIndex;
+    if (nodes.size() == 1) {
+        volatileState.commitIndex = LogIndex(persistentState.logs.size());
+    } else {
+        auto minIndex = LogIndex(std::numeric_limits<size_t>::max());
         for ([[maybe_unused]] const auto & [_, v] : asLeader().matchIndice)
-            cnt += v >= i;
-        if (cnt * 2 < nodes.size()) {
-            volatileState.commitIndex = LogIndex(i - 1);
-            break;
+            minIndex = std::min(minIndex, v);
+        minIndex = std::max(minIndex, volatileState.commitIndex);
+        for (size_t i = minIndex + 1; i <= persistentState.logs.size(); ++i) {
+            size_t cnt = 1;
+            for ([[maybe_unused]] const auto & [_, v] : asLeader().matchIndice)
+                cnt += v >= i;
+            if (cnt * 2 < nodes.size()) {
+                volatileState.commitIndex = LogIndex(i - 1);
+                break;
+            }
         }
     }
+    if (oldCommitIndex != volatileState.commitIndex) {
+        std::map<LogIndex, Message> tmp;
+        for (auto & [li, msg] : asLeader().pendingWriteRequests) {
+            if (li <= volatileState.commitIndex) {
+                auto rsp = std::make_shared<WriteResponse>();
+                sendBack(now, msg, std::move(rsp));
+            } else {
+                tmp[li] = std::move(msg);
+            }
+        }
+        asLeader().pendingWriteRequests = std::move(tmp);
+    }
+}
+
+void RaftMachine::convertToFollower(Timestamp now, Term term, std::optional<NodeId> leaderId) {
+    if (role() != Role::FOLLOWER) {
+        roleState = FollowerVolatileState();
+        asFollower().lastHeartbeatReceivedTime = now;
+    }
+    persistentState.currentTerm = term;
+    persistentState.voteFor.reset();
+    persistentState.leader = std::move(leaderId);
+}
+
+void RaftMachine::convertToCandidate() {
+    if (role() != Role::CANDIDATE) {
+        CandidateVolatileState state;
+        state.votes.insert(id);
+
+        roleState = state;
+    }
+
+    persistentState.currentTerm = Term(persistentState.currentTerm + 1);
+    persistentState.voteFor = id;
+    persistentState.leader.reset();
+}
+
+void RaftMachine::convertToLeader(Timestamp now) {
+    if (role() != Role::LEADER) {
+        LeaderVolatileState state;
+        for (const auto & nodeId : nodes) {
+            if (nodeId == id)
+                continue;
+            state.nextIndice[nodeId] = LogIndex(persistentState.logs.size() + 1);
+            state.matchIndice[nodeId] = LogIndex(0);
+        }
+
+        state.leaseStart = now;
+        state.leaseEnd = Timestamp(now + parameters::leaseLength);
+
+        roleState = state;
+    }
+
+    persistentState.leader = id;
+    persistentState.voteFor.reset();
 }
 } // namespace camus::raft::v0

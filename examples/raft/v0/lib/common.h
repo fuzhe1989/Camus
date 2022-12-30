@@ -16,4 +16,6 @@ STRONG_TYPEDEF(size_t, Interval);
 inline constexpr StatusCode kNotLeader = 1;
 inline constexpr StatusCode kStaleTerm = 2;
 inline constexpr StatusCode kPrevLogMismatch = 3;
+inline constexpr StatusCode kVoteGranted = 4;
+inline constexpr StatusCode kStaleLogIndex = 5;
 } // namespace camus::raft::v0
