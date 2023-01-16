@@ -52,6 +52,12 @@ void RaftMachine::handleImpl(Timestamp now) {
     }
 }
 
+void RaftMachine::handleRequestTimeout(Timestamp now, Message msg) {
+    (void)now;
+    (void)msg;
+    // TODO
+}
+
 void RaftMachine::handleRequest(Timestamp now, Message msg) {
     if (dynamic_cast<AppendEntriesRequest *>(msg.payload.get())) {
         handleAppendEntriesRequest(now, std::move(msg));
@@ -255,7 +261,7 @@ void RaftMachine::sendAppendEntriesRequests(Timestamp now, const NodeId & nodeId
     payload->term = persistentState.currentTerm;
     payload->leaderId = id;
     payload->prevLogIndex = LogIndex(nextIndex - 1);
-    payload->prevLogTerm = nextIndex == 1 ? Term(0) : persistentState.logs[nextIndex - 2].term;
+    payload->prevLogTerm = nextIndex == LogIndex(1) ? Term(0) : persistentState.logs[nextIndex - 2].term;
     for (auto i = nextIndex; i <= lastIndex; ++i)
         payload->entries.push_back(persistentState.logs[i - 1]);
     payload->leaderCommit = volatileState.commitIndex;

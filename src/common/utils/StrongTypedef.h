@@ -47,6 +47,12 @@ public:
     // NOLINTEND(google-explicit-constructor)
 
     auto operator<=>(const Self &) const = default;
+    bool operator==(const auto & u) const {
+        return t == u;
+    }
+    auto operator<=>(const auto & u) const {
+        return t <=> u;
+    }
 
     constexpr T & toUnderType() { return t; }
     constexpr const T & toUnderType() const { return t; }
