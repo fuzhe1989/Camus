@@ -33,5 +33,6 @@ struct FollowerVolatileState {
 
 struct CandidateVolatileState {
     std::set<NodeId> votes;
+    Timestamp electionStartTime{0};
 };
 } // namespace camus::raft::v0

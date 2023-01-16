@@ -34,8 +34,22 @@ void RaftMachine::shutdownImpl(bool critical) {
 }
 
 void RaftMachine::handleImpl(Timestamp now) {
-    // TODO
-    (void)now;
+    if (role() == Role::FOLLOWER) {
+        auto & volatileState = asFollower();
+        if (volatileState.lastHeartbeatReceivedTime + parameters::heartbeatTimeout < now) {
+            convertToCandidate(now);
+        }
+    } else if (role() == Role::CANDIDATE) {
+        auto & volatileState = asCandidate();
+        if (volatileState.electionStartTime + parameters::electionTimeout < now) {
+            // TODO: should we retry current round or start next round of vote?
+        }
+    } else {
+        auto & volatileState = asLeader();
+        if (volatileState.lastHeartbeatSentTime + parameters::heartbeatInterval < now) {
+            sendAppendEntriesRequests(now);
+        }
+    }
 }
 
 void RaftMachine::handleRequest(Timestamp now, Message msg) {
@@ -315,10 +329,11 @@ void RaftMachine::convertToFollower(Timestamp now, Term term, std::optional<Node
     persistentState.leader = std::move(leaderId);
 }
 
-void RaftMachine::convertToCandidate() {
+void RaftMachine::convertToCandidate(Timestamp now) {
     if (role() != Role::CANDIDATE) {
         CandidateVolatileState state;
         state.votes.insert(id);
+        state.electionStartTime = now;
 
         roleState = state;
     }
