@@ -47,11 +47,13 @@ public:
     // NOLINTEND(google-explicit-constructor)
 
     auto operator<=>(const Self &) const = default;
-    bool operator==(const auto & u) const {
-        return t == u;
-    }
-    auto operator<=>(const auto & u) const {
+    template <typename U>
+    requires(!std::is_arithmetic_v<T> && !std::is_arithmetic_v<U>) bool operator<=>(const U & u) const {
         return t <=> u;
+    }
+    template <typename U>
+    requires(!std::is_arithmetic_v<T> && !std::is_arithmetic_v<U>) bool operator==(const U & u) const {
+        return t == u;
     }
 
     constexpr T & toUnderType() { return t; }

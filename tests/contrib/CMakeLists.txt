@@ -5,5 +5,4 @@ target_link_libraries (gtests_contrib PRIVATE
   scn::scn
   spdlog::spdlog
   Folly::folly
-  #${Folly_folly_LINK_LIBS}
 )
