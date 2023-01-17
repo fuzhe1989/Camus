@@ -48,5 +48,24 @@ TEST(StrongTypedefTest, testSpetialization) {
     }
 }
 
+TEST(StrongTypedefTest, testComparison) {
+    STRONG_TYPEDEF(size_t, UserId);
+
+    UserId id0(5);
+    ASSERT_EQ(id0, 5);
+    ASSERT_EQ(id0, 5u);
+    ASSERT_TRUE(id0 < 10);
+    ASSERT_TRUE(10 > id0);
+    ASSERT_TRUE(id0 > 0);
+    ASSERT_TRUE(0u < id0);
+
+    STRONG_TYPEDEF(std::string, NodeId);
+
+    NodeId n("abc");
+    ASSERT_TRUE(n > "");
+    ASSERT_EQ(n, "abc");
+    ASSERT_EQ(n, std::string("abc"));
+}
+
 } // namespace
 } // namespace camus::tests

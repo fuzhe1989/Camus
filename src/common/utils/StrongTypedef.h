@@ -35,11 +35,7 @@ public:
     // use `lhs.toUnderType() = rhs` instead.
     Self & operator=(T) = delete;
     Self & operator=(const T &) = delete;
-
-    Self & operator=(T && rhs) requires(std::is_move_assignable_v<T>) {
-        t = std::move(rhs);
-        return *this;
-    }
+    Self & operator=(T && rhs) = delete;
 
     // NOLINTBEGIN(google-explicit-constructor)
     constexpr operator const T &() const { return t; }
@@ -48,7 +44,7 @@ public:
 
     auto operator<=>(const Self &) const = default;
     template <typename U>
-    requires(!std::is_arithmetic_v<T> && !std::is_arithmetic_v<U>) bool operator<=>(const U & u) const {
+    requires(!std::is_arithmetic_v<T> && !std::is_arithmetic_v<U>) auto operator<=>(const U & u) const {
         return t <=> u;
     }
     template <typename U>
