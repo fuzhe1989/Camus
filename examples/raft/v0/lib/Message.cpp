@@ -1,8 +1,8 @@
 #include <folly/Random.h>
 
+#include "MachineBase.h"
 #include "Message.h"
 #include "Parameters.h"
-
 
 namespace camus::raft::v0 {
 int64_t Message::nextRequestId = 0;
@@ -27,5 +27,26 @@ Message Message::makeRsp(Timestamp now, MachineBase * from, int64_t requestId, s
     msg.from = from;
     msg.payload = std::move(payload);
     return msg;
+}
+
+std::string Message::toString() const {
+    if (isRequest) {
+        return fmt::format(
+            "request id:{} from:{} sent:{} arrived:{} timeout:{} payload:{}",
+            requestId,
+            from->id,
+            sentTime,
+            arriveTime,
+            timeout,
+            payload->toString());
+    } else {
+        return fmt::format(
+            "response id:{} from:{} sent:{} arrived:{} payload:{}",
+            requestId,
+            from->id,
+            sentTime,
+            arriveTime,
+            payload->toString());
+    }
 }
 } // namespace camus::raft::v0

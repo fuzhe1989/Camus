@@ -1,7 +1,8 @@
 #include <folly/Random.h>
 
+#include <magic_enum.hpp>
+
 #include "MachineBase.h"
-#include "MessageFmt.h"
 #include "Parameters.h"
 
 namespace camus::raft::v0 {
@@ -12,6 +13,8 @@ void MachineBase::start(Timestamp now) {
     recoverTime.reset();
 
     startImpl(now);
+
+    MLOG("start");
 }
 
 void MachineBase::shutdown(bool critical) {
@@ -60,7 +63,7 @@ void MachineBase::insertMessage(Message msg) {
     }
 }
 
-void MachineBase::receive(Timestamp, Message msg) {
+void MachineBase::receive(Timestamp now, Message msg) {
     if (state != MachineState::SHUTDOWN && state != MachineState::NET_IN_BROKEN) {
         MLOG("receive message: {}", msg);
         insertMessage(std::move(msg));
@@ -95,6 +98,7 @@ void MachineBase::triggerEvent(Timestamp now, MachineEvent e) {
 void MachineBase::checkRecover(Timestamp now) {
     if (recoverTime && *recoverTime <= now) {
         MASSERT(state != MachineState::NORMAL, "");
+        MLOG("recover from {}", magic_enum::enum_name(state));
         if (state == MachineState::SHUTDOWN)
             start(now);
         state = MachineState::NORMAL;
@@ -124,6 +128,7 @@ void MachineBase::discardTimeoutRequests(Timestamp now) {
         }
     }
     for (const auto & req : timeoutedRequests) {
+        MLOG("discard timeouted request {}", req);
         ongoingRequests.erase(req.requestId);
     }
     for (auto && req : timeoutedRequests) {

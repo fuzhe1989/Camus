@@ -1,5 +1,4 @@
 #include "AppendEntries.h"
-#include "MessageFmt.h"
 #include "Parameters.h"
 #include "RaftMachine.h"
 #include "ReadRequest.h"
@@ -34,6 +33,7 @@ void RaftMachine::shutdownImpl(bool critical) {
 }
 
 void RaftMachine::handleImpl(Timestamp now) {
+    MLOG("start raft handling");
     if (role() == Role::FOLLOWER) {
         auto & volatileState = asFollower();
         if (volatileState.lastHeartbeatReceivedTime + parameters::heartbeatTimeout < now) {
@@ -41,7 +41,9 @@ void RaftMachine::handleImpl(Timestamp now) {
         }
     } else if (role() == Role::CANDIDATE) {
         auto & volatileState = asCandidate();
-        if (volatileState.electionStartTime + parameters::electionTimeout < now) {
+        if (volatileState.votes.size() * 2 > nodes.size()) {
+            convertToLeader(now);
+        } else if (volatileState.electionStartTime + parameters::electionTimeout < now) {
             // TODO: should we retry current round or start next round of vote?
         }
     } else {
@@ -326,46 +328,54 @@ void RaftMachine::tryPromoteCommitIndex(Timestamp now) {
 }
 
 void RaftMachine::convertToFollower(Timestamp now, Term term, std::optional<NodeId> leaderId) {
-    if (role() != Role::FOLLOWER) {
-        roleState = FollowerVolatileState();
-        asFollower().lastHeartbeatReceivedTime = now;
-    }
+    MASSERT(role() != Role::FOLLOWER, "");
+
+    roleState = FollowerVolatileState();
+    asFollower().lastHeartbeatReceivedTime = now;
+
     persistentState.currentTerm = term;
     persistentState.voteFor.reset();
     persistentState.leader = std::move(leaderId);
+
+    MLOG("become follower term:{} leader:{}", term, leaderId ? leaderId->toUnderType() : "null");
 }
 
 void RaftMachine::convertToCandidate(Timestamp now) {
-    if (role() != Role::CANDIDATE) {
-        CandidateVolatileState state;
-        state.votes.insert(id);
-        state.electionStartTime = now;
+    MASSERT(role() != Role::CANDIDATE, "");
 
-        roleState = state;
-    }
+    CandidateVolatileState state;
+    state.votes.insert(id);
+    state.electionStartTime = now;
+
+    roleState = state;
 
     persistentState.currentTerm = Term(persistentState.currentTerm + 1);
     persistentState.voteFor = id;
     persistentState.leader.reset();
+
+    MLOG("start an election for term {}", persistentState.currentTerm);
 }
 
 void RaftMachine::convertToLeader(Timestamp now) {
-    if (role() != Role::LEADER) {
-        LeaderVolatileState state;
-        for (const auto & nodeId : nodes) {
-            if (nodeId == id)
-                continue;
-            state.nextIndice[nodeId] = LogIndex(persistentState.logs.size() + 1);
-            state.matchIndice[nodeId] = LogIndex(0);
-        }
-
-        state.leaseStart = now;
-        state.leaseEnd = Timestamp(now + parameters::leaseLength);
-
-        roleState = state;
+    MASSERT(role() != Role::LEADER, "");
+    LeaderVolatileState state;
+    for (const auto & nodeId : nodes) {
+        if (nodeId == id)
+            continue;
+        state.nextIndice[nodeId] = LogIndex(persistentState.logs.size() + 1);
+        state.matchIndice[nodeId] = LogIndex(0);
     }
+
+    state.leaseStart = now;
+    state.leaseEnd = Timestamp(now + parameters::leaseLength);
+
+    roleState = state;
 
     persistentState.leader = id;
     persistentState.voteFor.reset();
+
+    MLOG("become leader of term {}", persistentState.currentTerm);
+
+    sendAppendEntriesRequests(now);
 }
 } // namespace camus::raft::v0

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <deque>
 #include <map>
 #include <optional>
@@ -54,6 +56,16 @@ struct MachineBase {
 };
 } // namespace camus::raft::v0
 
-#define MLOG(fmt, ...)
+#define MLOG(fmt, ...) SPDLOG_INFO("[T = {} id = {}] " fmt, now, id __VA_OPT__(, ) __VA_ARGS__)
 
-#define MASSERT(condition, fmt, ...)
+#define MASSERT(condition, fmt, ...)                    \
+  do {                                                  \
+    if (!(condition)) {                                 \
+      SPDLOG_ERROR(                                     \
+          "[T = {} id = {}] assertion failed: {} " fmt, \
+          now,                                          \
+          id,                                           \
+          #condition __VA_OPT__(, ) __VA_ARGS__);       \
+      assert(false);                                    \
+    }                                                   \
+  } while (false)
